@@ -1,19 +1,41 @@
-# TeacherPrompter
+# Teacher Prompter
 
-A simple teleprompter for teachers in a single file, `index.html`. It works in Chrome and Safari on iPad and needs no installation or internet connection.
+Навигатор по уроку для iPad. Это не телесуфлёр с бегущим текстом: приложение в любой момент отвечает на четыре вопроса:
 
-## How to open it on an iPad
+- **Was sage ich jetzt?** Что говорить сейчас?
+- **Was mache ich danach?** Что дальше?
+- **Welche Frage stelle ich?** Какой вопрос задать?
+- **In welcher Phase und auf welcher Folie bin ich?** Какой этап и какой слайд?
 
-- **GitHub Pages:** in the repository go to Settings → Pages → Branch: `main` / root. Then open `https://<user>.github.io/TeacherPrompter/` in Chrome.
-- Or save `index.html` to the Files app and open it in a browser.
+Главный принцип — **The teacher owns the words.** Приложение структурирует, классифицирует и показывает материал, но не меняет слова учителя без его явного действия.
 
-Tip: in Safari, "Share → Add to Home Screen" opens the prompter full screen like an app.
+## Структура репозитория
 
-## Controls
+| Путь | Что там |
+|------|---------|
+| `ios/TeacherPrompter.xcodeproj` | Проект Xcode |
+| `ios/TeacherPrompter/` | Нативное приложение для iPadOS: Swift, SwiftUI, SwiftData |
+| `ios/TeacherPrompterTests/` | Тесты на Swift Testing: парсер, защита оригинала, логика Current + Next |
+| `docs/ARCHITECTURE.md` | Архитектура, модели, навигация, импорт, защита текста |
+| `web/index.html` | Прежняя простая веб-версия (телесуфлёр в браузере) |
 
-- Tap the screen: start or pause.
-- Swipe: scroll the text by hand.
-- Buttons: `−`/`+` for speed, `A−`/`A+` for font size, `⏮` to go back to the start, `✕` to return to the editor.
-- Bluetooth keyboard or clicker: Space for start/pause, ↑/↓ for speed, ←/→ to jump, Esc to exit.
+## Запуск
 
-The text and settings are saved in the browser automatically. The screen does not dim while the prompter is running (Wake Lock).
+1. Нужен **Xcode 16** или новее: проект использует синхронизируемые папки (формат 77).
+2. Откройте `ios/TeacherPrompter.xcodeproj`.
+3. В *Signing & Capabilities* выберите свою команду (Team).
+4. Выберите iPad или симулятор iPad с **iPadOS 17.4+** и нажмите ⌘R. Тесты запускаются по ⌘U.
+
+При первом запуске создаётся демо-урок «Zellmembran».
+
+## Управление во время урока
+
+| Действие | Результат |
+|----------|-----------|
+| Касание текущего блока (пальцем или Apple Pencil) | блок выполнен, следующий становится текущим |
+| Свайп влево / вправо | вперёд / назад |
+| Пробел, → / ← | вперёд / назад (клавиатура или педаль-перелистыватель) |
+| Долгое нажатие | Edit · Skip · Move to later · Mark as important |
+| «Rückgängig» (6 секунд) или ⌘Z | отменить последний шаг |
+| A− / A+ | размер текста (сохраняется) |
+| Боковая панель | обзор всего урока, переход к любому блоку |

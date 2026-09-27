@@ -27,7 +27,7 @@
    - В приложении «Файлы» коснитесь ZIP-файла, чтобы распаковать его.
 3. Переместите папку **`TeacherPrompter.swiftpm`** в iCloud Drive → Playgrounds (или «На iPad»). Коснитесь её — она откроется в Swift Playgrounds.
 4. Нажмите **▶**. Приложение соберётся и запустится.
-   - Кнопка «App Settings» добавит его на домашний экран.
+   - Приложение работает внутри Swift Playgrounds, на домашний экран его отдельно не добавить.
 
 С Windows: скачайте ZIP на ПК и положите папку `TeacherPrompter.swiftpm` в iCloud Drive (через «iCloud для Windows»). Дальше выполните шаги 3–4 на iPad.
 

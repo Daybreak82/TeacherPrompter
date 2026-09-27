@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(Translation)
 import Translation
+#endif
 
 /// Edits one block. Changes are applied only when the teacher taps "Done" (explicit action).
 /// The imported wording (`originalText`) is shown read-only and can be restored at any time.
@@ -97,6 +99,7 @@ struct BlockEditorView: View {
                         .autocorrectionDisabled()
                 }
 
+                #if canImport(Translation)
                 Section {
                     Button {
                         showTranslation = true
@@ -109,6 +112,7 @@ struct BlockEditorView: View {
                 } footer: {
                     Text(loc(.translationHint))
                 }
+                #endif
             }
             .navigationTitle(loc(.editBlock))
             .navigationBarTitleDisplayMode(.inline)

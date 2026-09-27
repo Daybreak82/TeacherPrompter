@@ -159,6 +159,8 @@ Focus Mode скрывает шапку и нижнюю панель. На экр
 
 ## 9. Основные экраны: где код
 
+Весь код лежит в `TeacherPrompter.swiftpm/Sources/`. Его используют и Swift Playgrounds, и `ios/TeacherPrompter.xcodeproj`.
+
 | Экран | Файл |
 |-------|------|
 | Lesson Mode | `LessonMode/LessonModeView.swift`, `CurrentBlockView.swift`, `NextBlockView.swift`, `LessonOverviewView.swift`, `LessonModeOverlays.swift` |

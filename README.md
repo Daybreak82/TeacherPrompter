@@ -13,16 +13,28 @@
 
 | Путь | Что там |
 |------|---------|
-| `ios/TeacherPrompter.xcodeproj` | Проект Xcode |
-| `ios/TeacherPrompter/` | Нативное приложение для iPadOS: Swift, SwiftUI, SwiftData |
-| `ios/TeacherPrompterTests/` | Тесты на Swift Testing: парсер, защита оригинала, логика Current + Next |
+| `TeacherPrompter.swiftpm/` | Приложение в формате **Swift Playgrounds** (iPad или Mac). Здесь лежит весь исходный код (`Sources/`) |
+| `ios/TeacherPrompter.xcodeproj` | Проект Xcode, использует те же исходники из `TeacherPrompter.swiftpm/Sources` |
+| `ios/TeacherPrompterTests/` | Тесты на Swift Testing (запускаются только в Xcode) |
 | `docs/ARCHITECTURE.md` | Архитектура, модели, навигация, импорт, защита текста |
 | `web/index.html` | Прежняя простая веб-версия (телесуфлёр в браузере) |
 
-## Запуск
+## Запуск на iPad без Mac: Swift Playgrounds
+
+1. Установите на iPad бесплатное приложение **Swift Playgrounds** из App Store. Нужен iPadOS 17.4 или новее.
+2. На iPad откройте страницу репозитория в Safari или Chrome.
+   - Переключитесь на нужную ветку и нажмите **Code → Download ZIP**.
+   - В приложении «Файлы» коснитесь ZIP-файла, чтобы распаковать его.
+3. Переместите папку **`TeacherPrompter.swiftpm`** в iCloud Drive → Playgrounds (или «На iPad»). Коснитесь её — она откроется в Swift Playgrounds.
+4. Нажмите **▶**. Приложение соберётся и запустится.
+   - Кнопка «App Settings» добавит его на домашний экран.
+
+С Windows: скачайте ZIP на ПК и положите папку `TeacherPrompter.swiftpm` в iCloud Drive (через «iCloud для Windows»). Дальше выполните шаги 3–4 на iPad.
+
+## Запуск через Xcode (Mac)
 
 1. Нужен **Xcode 16** или новее: проект использует синхронизируемые папки (формат 77).
-2. Откройте `ios/TeacherPrompter.xcodeproj`.
+2. Откройте `ios/TeacherPrompter.xcodeproj`. Можно открыть и `TeacherPrompter.swiftpm`, но без тестов.
 3. В *Signing & Capabilities* выберите свою команду (Team).
 4. Выберите iPad или симулятор iPad с **iPadOS 17.4+** и нажмите ⌘R. Тесты запускаются по ⌘U.
 

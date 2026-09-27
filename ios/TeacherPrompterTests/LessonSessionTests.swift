@@ -57,7 +57,8 @@ struct LessonSessionTests {
         #expect(session.current?.text == "B")
         session.performUndo()
         #expect(session.current?.text == "A")
-        #expect(lesson.orderedBlocks.allSatisfy { !$0.isDone })
+        let doneCount = lesson.orderedBlocks.filter { $0.isDone }.count
+        #expect(doneCount == 0)
     }
 
     @Test func backSkipJumpAndMoveLater() throws {

@@ -153,8 +153,10 @@ struct VerbatimGuardTests {
     @Test func ruleBasedAnalyzerOutputIsAlwaysVerbatim() async throws {
         let document = ExtractedDocument(filename: "Stunde.txt", kind: .text, segments: [.text(SampleLesson.text)])
         let script = try await RuleBasedAnalyzer().analyze([document], mode: .structured)
-        #expect(!script.allBlocks.isEmpty)
-        #expect(script.allBlocks.allSatisfy(\.isVerbatim))
+        let blocks = script.allBlocks
+        let nonVerbatim = blocks.filter { !$0.isVerbatim }.count
+        #expect(!blocks.isEmpty)
+        #expect(nonVerbatim == 0)
     }
 }
 

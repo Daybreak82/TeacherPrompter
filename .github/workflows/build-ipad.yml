@@ -60,4 +60,10 @@ jobs:
             -destination "id=$UDID" \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            test
+            test > test.log 2>&1 || {
+              echo "::group::Full log tail"; tail -n 80 test.log; echo "::endgroup::"
+              echo "===== ERRORS / FAILURES ====="
+              grep -E "error:|✘|failed|Expectation failed|recorded an issue" test.log | grep -v "^note:" | head -n 80
+              exit 1
+            }
+          grep -E "Test run with|✔ Test run|passed" test.log | tail -n 5

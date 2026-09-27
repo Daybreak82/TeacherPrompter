@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
+<title>TeacherPrompter</title>
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --panel: #1c1c1e;
+    --muted: #8e8e93;
+    --accent: #0a84ff;
+    --line: #ffd60a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+  button {
+    font: inherit; color: var(--fg); background: var(--panel);
+    border: 0; border-radius: 12px; padding: 12px 18px; min-height: 48px;
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); font-weight: 600; }
+  button:active { opacity: .6; }
+
+  /* ---------- Экран редактора ---------- */
+  #editor {
+    display: flex; flex-direction: column; gap: 16px;
+    height: 100%;
+    padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+             calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    max-width: 900px; margin: 0 auto;
+  }
+  #editor h1 { margin: 0; font-size: 24px; }
+  #text {
+    flex: 1; width: 100%; resize: none;
+    background: var(--panel); color: var(--fg);
+    border: 0; border-radius: 12px; padding: 16px;
+    font-family: inherit; font-size: 18px; line-height: 1.5; /* ≥16px — iOS не будет зумить */
+  }
+  .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+  .settings label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 15px; }
+  .settings input[type=range] { width: 100%; height: 32px; accent-color: var(--accent); }
+  .settings .check { flex-direction: row; align-items: center; gap: 10px; color: var(--fg); }
+  .settings .check input { width: 24px; height: 24px; accent-color: var(--accent); }
+  .actions { display: flex; gap: 12px; }
+  .actions .primary { flex: 1; font-size: 20px; }
+  @media (max-width: 560px) { .settings { grid-template-columns: 1fr; } }
+
+  /* ---------- Экран суфлёра ---------- */
+  #prompter {
+    display: none; position: fixed; inset: 0; overflow: hidden;
+    background: var(--bg); touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #prompter.show { display: block; }
+  #scroller {
+    position: absolute; left: 0; right: 0; top: 0;
+    padding: 0 max(6vw, env(safe-area-inset-left)) 0 max(6vw, env(safe-area-inset-right));
+    will-change: transform;
+  }
+  #scroller.mirror { transform-origin: center; }
+  #content {
+    white-space: pre-wrap; word-wrap: break-word;
+    font-weight: 600; line-height: 1.35;
+  }
+  #guide {
+    position: absolute; left: 0; right: 0; height: 0;
+    border-top: 3px solid var(--line); opacity: .7; pointer-events: none;
+  }
+  #guide::before, #guide::after {
+    content: ""; position: absolute; top: -12px;
+    border: 10px solid transparent;
+  }
+  #guide::before { left: 0; border-left-color: var(--line); }
+  #guide::after { right: 0; border-right-color: var(--line); }
+
+  #hud {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, rgba(0,0,0,.85) 40%);
+    transition: opacity .3s;
+  }
+  #hud.hidden { opacity: 0; pointer-events: none; }
+  #hud button { background: rgba(60,60,67,.85); min-width: 56px; font-size: 18px; }
+  #hud .val { align-self: center; color: var(--muted); font-size: 15px; min-width: 52px; text-align: center; }
+  #status {
+    position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 50%;
+    transform: translateX(-50%);
+    background: rgba(60,60,67,.85); padding: 6px 14px; border-radius: 20px;
+    font-size: 15px; transition: opacity .3s; pointer-events: none;
+  }
+  #status.hidden { opacity: 0; }
+  #progress {
+    position: absolute; top: 0; left: 0; height: 4px; background: var(--accent); width: 0;
+  }
+</style>
+</head>
+<body>
+
+<section id="editor">
+  <h1>TeacherPrompter</h1>
+  <textarea id="text" placeholder="Вставьте или напишите текст урока здесь…"></textarea>
+  <div class="settings">
+    <label><span>Размер шрифта: <span id="sizeVal"></span></span>
+      <input id="size" type="range" min="24" max="120" step="2">
+    </label>
+    <label><span>Скорость: <span id="speedVal"></span></span>
+      <input id="speed" type="range" min="1" max="20" step="1">
+    </label>
+    <label><span>Линия чтения (от верха): <span id="guideVal"></span></span>
+      <input id="guidePos" type="range" min="10" max="60" step="5">
+    </label>
+    <label class="check"><input id="mirror" type="checkbox"> Зеркально (для стекла суфлёра)</label>
+  </div>
+  <div class="actions">
+    <button id="clear">Очистить</button>
+    <button id="start" class="primary">▶ Старт</button>
+  </div>
+</section>
+
+<section id="prompter">
+  <div id="scroller"><div id="content"></div></div>
+  <div id="guide"></div>
+  <div id="progress"></div>
+  <div id="status" class="hidden"></div>
+  <div id="hud">
+    <button id="back">✕</button>
+    <button id="restart">⏮</button>
+    <button id="slower">−</button>
+    <span class="val" id="hudSpeed"></span>
+    <button id="faster">+</button>
+    <button id="smaller">A−</button>
+    <button id="bigger">A+</button>
+    <button id="play" class="primary">▶</button>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = "teacherprompter.v1";
+
+  var defaults = {
+    text: "Добрый день, ребята!\n\nСегодня на уроке мы поговорим о…\n\n" +
+          "Нажмите на экран, чтобы остановить или продолжить прокрутку. " +
+          "Проведите пальцем, чтобы перемотать текст вручную.",
+    size: 56, speed: 5, guide: 30, mirror: false
+  };
+
+  function load() {
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY));
+      if (s && typeof s === "object") return Object.assign({}, defaults, s);
+    } catch (e) {}
+    return Object.assign({}, defaults);
+  }
+  var state = load();
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // ---------- Редактор ----------
+  var text = $("text"), size = $("size"), speed = $("speed"),
+      guidePos = $("guidePos"), mirror = $("mirror");
+
+  function syncEditor() {
+    text.value = state.text;
+    size.value = state.size;
+    speed.value = state.speed;
+    guidePos.value = state.guide;
+    mirror.checked = state.mirror;
+    $("sizeVal").textContent = state.size + " px";
+    $("speedVal").textContent = state.speed;
+    $("guideVal").textContent = state.guide + "%";
+  }
+  syncEditor();
+
+  text.addEventListener("input", function () { state.text = text.value; save(); });
+  size.addEventListener("input", function () { state.size = +size.value; save(); syncEditor(); });
+  speed.addEventListener("input", function () { state.speed = +speed.value; save(); syncEditor(); });
+  guidePos.addEventListener("input", function () { state.guide = +guidePos.value; save(); syncEditor(); });
+  mirror.addEventListener("change", function () { state.mirror = mirror.checked; save(); });
+  $("clear").addEventListener("click", function () {
+    if (confirm("Удалить весь текст?")) { state.text = ""; save(); syncEditor(); text.focus(); }
+  });
+
+  // ---------- Суфлёр ----------
+  var prompter = $("prompter"), scroller = $("scroller"), content = $("content"),
+      hud = $("hud"), status = $("status"), progress = $("progress");
+
+  var pos = 0;          // смещение текста вверх, px
+  var playing = false;
+  var lastTs = 0;
+  var hudTimer = 0, statusTimer = 0;
+  var wakeLock = null;
+
+  function guideY() { return window.innerHeight * state.guide / 100; }
+  function maxPos() { return Math.max(0, content.offsetHeight); }
+  // скорость 1..20 → пикселей в секунду, с учётом размера шрифта
+  function pxPerSec() { return state.speed * state.size * 0.12; }
+
+  function render() {
+    pos = Math.min(Math.max(pos, 0), maxPos());
+    var y = guideY() - pos;
+    scroller.style.transform = "translate3d(0," + y + "px,0)" + (state.mirror ? " scaleX(-1)" : "");
+    var m = maxPos();
+    progress.style.width = (m ? (pos / m) * 100 : 0) + "%";
+  }
+
+  function applyLayout() {
+    content.style.fontSize = state.size + "px";
+    $("guide").style.top = guideY() + "px";
+    $("hudSpeed").textContent = "⏩ " + state.speed;
+    render();
+  }
+
+  function flash(msg) {
+    status.textContent = msg;
+    status.classList.remove("hidden");
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(function () { status.classList.add("hidden"); }, 1200);
+  }
+
+  function showHud() {
+    hud.classList.remove("hidden");
+    clearTimeout(hudTimer);
+    if (playing) hudTimer = setTimeout(function () { hud.classList.add("hidden"); }, 2500);
+  }
+
+  function tick(ts) {
+    if (!playing) return;
+    if (lastTs) {
+      var dt = Math.min((ts - lastTs) / 1000, 0.1);
+      pos += pxPerSec() * dt;
+      if (pos >= maxPos()) { pos = maxPos(); render(); setPlaying(false); flash("Конец текста"); return; }
+      render();
+    }
+    lastTs = ts;
+    requestAnimationFrame(tick);
+  }
+
+  function setPlaying(p) {
+    playing = p;
+    $("play").textContent = p ? "❚❚" : "▶";
+    lastTs = 0;
+    if (p) {
+      if (pos >= maxPos()) pos = 0;
+      requestAnimationFrame(tick);
+      requestWakeLock();
+    }
+    showHud();
+  }
+
+  function requestWakeLock() {
+    if (!("wakeLock" in navigator) || wakeLock) return;
+    navigator.wakeLock.request("screen").then(function (l) {
+      wakeLock = l;
+      l.addEventListener("release", function () { wakeLock = null; });
+    }).catch(function () {});
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && prompter.classList.contains("show")) requestWakeLock();
+  });
+
+  function openPrompter() {
+    content.textContent = state.text.trim() || "(текст пустой)";
+    document.getElementById("editor").style.display = "none";
+    prompter.classList.add("show");
+    pos = 0;
+    applyLayout();
+    var el = document.documentElement;
+    var fs = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (fs) { try { var r = fs.call(el); if (r && r.catch) r.catch(function () {}); } catch (e) {} }
+    requestWakeLock();
+    setPlaying(false);
+    flash("Нажмите на экран — старт");
+  }
+
+  function closePrompter() {
+    setPlaying(false);
+    prompter.classList.remove("show");
+    document.getElementById("editor").style.display = "";
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (ex && (document.fullscreenElement || document.webkitFullscreenElement)) {
+      try { var r = ex.call(document); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+    }
+    if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+    syncEditor();
+  }
+
+  function changeSpeed(d) {
+    state.speed = Math.min(20, Math.max(1, state.speed + d));
+    save(); applyLayout(); flash("Скорость " + state.speed);
+  }
+  function changeSize(d) {
+    var ratio = maxPos() ? pos / maxPos() : 0;
+    state.size = Math.min(120, Math.max(24, state.size + d));
+    save(); content.style.fontSize = state.size + "px";
+    pos = ratio * maxPos();
+    applyLayout(); flash("Шрифт " + state.size);
+  }
+
+  $("start").addEventListener("click", openPrompter);
+  $("back").addEventListener("click", closePrompter);
+  $("restart").addEventListener("click", function () { pos = 0; render(); showHud(); });
+  $("play").addEventListener("click", function () { setPlaying(!playing); });
+  $("slower").addEventListener("click", function () { changeSpeed(-1); showHud(); });
+  $("faster").addEventListener("click", function () { changeSpeed(1); showHud(); });
+  $("smaller").addEventListener("click", function () { changeSize(-4); showHud(); });
+  $("bigger").addEventListener("click", function () { changeSize(4); showHud(); });
+  // не даём кнопкам запускать обработчик касаний экрана
+  hud.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+
+  // Касание — пауза/старт; перетаскивание — ручная прокрутка
+  var drag = null;
+  prompter.addEventListener("pointerdown", function (e) {
+    drag = { y: e.clientY, startPos: pos, moved: false, wasPlaying: playing };
+    try { prompter.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  prompter.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var dy = e.clientY - drag.y;
+    if (!drag.moved && Math.abs(dy) > 8) {
+      drag.moved = true;
+      if (playing) { playing = false; $("play").textContent = "▶"; }
+    }
+    if (drag.moved) { pos = drag.startPos - dy; render(); }
+  });
+  function endDrag() {
+    if (!drag) return;
+    var d = drag; drag = null;
+    if (d.moved) { if (d.wasPlaying) setPlaying(true); else showHud(); }
+    else setPlaying(!playing);
+  }
+  prompter.addEventListener("pointerup", endDrag);
+  prompter.addEventListener("pointercancel", function () { drag = null; });
+
+  // Колёсико / трекпад
+  prompter.addEventListener("wheel", function (e) {
+    e.preventDefault(); pos += e.deltaY; render(); showHud();
+  }, { passive: false });
+
+  // Bluetooth-клавиатура или пульт-кликер
+  document.addEventListener("keydown", function (e) {
+    if (!prompter.classList.contains("show")) return;
+    switch (e.key) {
+      case " ": case "Enter": setPlaying(!playing); break;
+      case "ArrowUp": changeSpeed(1); break;
+      case "ArrowDown": changeSpeed(-1); break;
+      case "PageDown": case "ArrowRight": pos += window.innerHeight * 0.5; render(); break;
+      case "PageUp": case "ArrowLeft": pos -= window.innerHeight * 0.5; render(); break;
+      case "Escape": closePrompter(); break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+
+  window.addEventListener("resize", function () { if (prompter.classList.contains("show")) applyLayout(); });
+})();
+</script>
+</body>
+</html>

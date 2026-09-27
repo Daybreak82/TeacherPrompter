@@ -414,18 +414,21 @@ struct LessonModeView: View {
     /// that send arrow keys).
     private var keyboardShortcuts: some View {
         Group {
-            Button("") { perform(.forward) { session.completeCurrent() } }
+            Group {
+                Button("") { perform(.forward) { session.completeCurrent() } }
                 .keyboardShortcut(.space, modifiers: [])
-            Button("") { perform(.forward) { session.completeCurrent() } }
+                Button("") { perform(.forward) { session.completeCurrent() } }
                 .keyboardShortcut(.rightArrow, modifiers: [])
             Button("") { perform(.backward) { session.goBack() } }
                 .keyboardShortcut(.leftArrow, modifiers: [])
             Button("") { perform(.backward) { session.performUndo() } }
                 .keyboardShortcut("z", modifiers: .command)
+            }
+            .disabled(session.isPaused)
             Button("") { withAnimation { session.isPaused ? session.resume() : session.pause() } }
                 .keyboardShortcut("p", modifiers: [])
         }
-        .disabled(editingBlock != nil || session.isPaused)
+        .disabled(editingBlock != nil)
         .opacity(0)
         .frame(width: 0, height: 0)
         .accessibilityHidden(true)

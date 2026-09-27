@@ -27,14 +27,14 @@ struct ZipArchive {
         guard bytes.count >= 22 else { throw ZipError.notAZipFile }
 
         // End of central directory record.
-        var eocd: Int?
+        var eocdIndex: Int?
         var index = bytes.count - 22
         let lowerBound = max(0, bytes.count - 22 - 65_535)
         while index >= lowerBound {
-            if Self.u32(bytes, index) == 0x0605_4b50 { eocd = index; break }
+            if Self.u32(bytes, index) == 0x0605_4b50 { eocdIndex = index; break }
             index -= 1
         }
-        guard let eocd else { throw ZipError.notAZipFile }
+        guard let eocd = eocdIndex else { throw ZipError.notAZipFile }
 
         let count = Int(Self.u16(bytes, eocd + 10))
         var pointer = Int(Self.u32(bytes, eocd + 16))
